@@ -116,7 +116,13 @@ async function handle(request, { params }) {
       return cors(NextResponse.json({ ok: true, upload_id: uploadRow.id, filename: file.name, rows_inserted: inserted, headers, mapped }))
     }
 
-    // -------- LIVE SUGGESTIONS (auth required) --------
+    // Helper to get latest upload id (for "current dataset" filtering)
+    async function getLatestUploadId(sb) {
+      const { data } = await sb.from('uploads').select('id').order('created_at', { ascending: false }).limit(1).maybeSingle()
+      return data?.id || null
+    }
+
+    // -------- LIVE SUGGESTIONS (auth required) - filters to LATEST UPLOAD ONLY --------
     if (route === '/suggest' && method === 'GET') {
       const profile = await getUserProfile(request)
       if (!profile) return cors(NextResponse.json({ error: 'unauthenticated' }, { status: 401 }))
@@ -124,24 +130,62 @@ async function handle(request, { params }) {
       const q = (url.searchParams.get('q') || '').trim()
       if (!q) return cors(NextResponse.json([]))
       const sb = supabaseAdmin()
-      const { data, error } = await sb.rpc('search_medicines_suggestions', { q, max_results: 10 })
+      const latestId = await getLatestUploadId(sb)
+      if (!latestId) return cors(NextResponse.json([]))
+      const { data, error } = await sb.from('medicines')
+        .select('name, scientific_name, company, source_id')
+        .eq('upload_id', latestId)
+        .ilike('search_text', `%${q.toLowerCase()}%`)
+        .limit(200)
       if (error) throw error
-      return cors(NextResponse.json(data || []))
+      // Group by name in JS
+      const map = new Map()
+      for (const r of data || []) {
+        const key = r.name
+        if (!map.has(key)) map.set(key, { name: r.name, scientific_name: r.scientific_name, company: r.company, hits: 0, max_id: parseInt(r.source_id) || 0 })
+        const g = map.get(key); g.hits++
+        const sid = parseInt(r.source_id); if (!isNaN(sid) && sid > g.max_id) g.max_id = sid
+      }
+      const out = Array.from(map.values())
+        .sort((a, b) => {
+          const aStarts = a.name.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+          const bStarts = b.name.toLowerCase().startsWith(q.toLowerCase()) ? 0 : 1
+          if (aStarts !== bStarts) return aStarts - bStarts
+          return b.max_id - a.max_id
+        })
+        .slice(0, 10)
+      return cors(NextResponse.json(out))
     }
 
-    // -------- SEARCH (auth required) --------
+    // -------- SEARCH (auth required) - filters to LATEST UPLOAD ONLY --------
     if (route === '/search' && method === 'GET') {
       const profile = await getUserProfile(request)
       if (!profile) return cors(NextResponse.json({ error: 'unauthenticated' }, { status: 401 }))
       const url = new URL(request.url)
       const q = (url.searchParams.get('q') || '').trim()
-      const limit = Math.min(parseInt(url.searchParams.get('limit') || '200'), 1000)
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '200'), 2000)
       const sb = supabaseAdmin()
-      let query = sb.from('medicines').select('*').order('created_at', { ascending: false }).limit(limit)
+      const latestId = await getLatestUploadId(sb)
+      if (!latestId) return cors(NextResponse.json([]))
+      let query = sb.from('medicines').select('*').eq('upload_id', latestId).order('created_at', { ascending: false }).limit(limit)
       if (q) query = query.ilike('search_text', `%${q.toLowerCase()}%`)
       const { data, error } = await query
       if (error) throw error
       return cors(NextResponse.json(data || []))
+    }
+
+    // -------- DELETE AN UPLOAD (admin only) -------- 
+    if (route.startsWith('/uploads/') && method === 'DELETE') {
+      const profile = await getUserProfile(request)
+      if (!profile) return cors(NextResponse.json({ error: 'unauthenticated' }, { status: 401 }))
+      if (profile.role !== 'admin') return cors(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
+      const id = route.split('/')[2]
+      const sb = supabaseAdmin()
+      const { error: dmErr } = await sb.from('medicines').delete().eq('upload_id', id)
+      if (dmErr) return cors(NextResponse.json({ error: dmErr.message }, { status: 400 }))
+      const { error: duErr } = await sb.from('uploads').delete().eq('id', id)
+      if (duErr) return cors(NextResponse.json({ error: duErr.message }, { status: 400 }))
+      return cors(NextResponse.json({ ok: true }))
     }
 
     // -------- HISTORY (auth required) --------

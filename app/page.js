@@ -130,7 +130,15 @@ function SearchTab({ authedFetch }) {
   const [results, setResults] = useState([])
   const [selected, setSelected] = useState(null)
   const [open, setOpen] = useState(false)
+  const [currentFile, setCurrentFile] = useState(null)
   const debounceRef = useRef(null)
+
+  // Load current upload info
+  useEffect(() => {
+    authedFetch('/api/uploads').then(r => r.json()).then(d => {
+      if (Array.isArray(d) && d.length > 0) setCurrentFile(d[0])
+    }).catch(() => {})
+  }, [authedFetch])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -172,6 +180,15 @@ function SearchTab({ authedFetch }) {
 
   return (
     <div className="space-y-4">
+      {currentFile && (
+        <div className="rounded-lg border bg-emerald-50 border-emerald-200 px-4 py-2.5 text-sm flex items-center gap-2 flex-wrap">
+          <FileSpreadsheet className="size-4 text-emerald-700" />
+          <span className="text-emerald-900">يبحث النظام في الملف:</span>
+          <span className="font-semibold text-emerald-900">{currentFile.filename}</span>
+          <Badge variant="outline" className="border-emerald-300 num text-emerald-800">{formatNumber(currentFile.rows_count)} سجل</Badge>
+          <span className="text-xs text-emerald-700">رُفع في {formatDate(currentFile.created_at)}</span>
+        </div>
+      )}
       <div className="relative">
         <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
         <Input
@@ -232,6 +249,7 @@ function AdminTab({ authedFetch }) {
   const [stats, setStats] = useState(null)
   const [uploads, setUploads] = useState([])
   const [lastResult, setLastResult] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -252,9 +270,22 @@ function AdminTab({ authedFetch }) {
       const res = await authedFetch('/api/upload', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) { toast.error(data?.error || 'فشل الرفع'); setLastResult(data) }
-      else { toast.success(`تم استيراد ${data.rows_inserted} سجل بنجاح`); setLastResult(data); setFile(null); refresh() }
+      else { toast.success(`تم استيراد ${data.rows_inserted} سجل بنجاح — الملف الجديد أصبح هو ملف البحث الحالي`); setLastResult(data); setFile(null); refresh() }
     } catch (e) { toast.error(e?.message || 'فشل الاتصال') } finally { setUploading(false) }
   }
+
+  async function handleDeleteUpload(id, filename) {
+    if (!confirm(`حذف الملف "${filename}" وكل سجلاته نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) return
+    setDeletingId(id)
+    try {
+      const res = await authedFetch(`/api/uploads/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) toast.error(data?.error || 'فشل الحذف')
+      else { toast.success('تم حذف الملف بنجاح'); refresh() }
+    } finally { setDeletingId(null) }
+  }
+
+  const currentUpload = uploads[0] // newest first
 
   return (
     <div className="space-y-6">
@@ -289,13 +320,29 @@ function AdminTab({ authedFetch }) {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><History className="size-5 text-primary" /> آخر الملفات المرفوعة</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><History className="size-5 text-primary" /> الملفات المرفوعة</CardTitle>
+          <CardDescription>الملف الأحدث (في الأعلى) هو الذي يبحث فيه النظام حالياً. الملفات القديمة محفوظة لسجل الشراء التاريخي ويمكنك حذفها يدوياً.</CardDescription>
+        </CardHeader>
         <CardContent>
           {uploads.length === 0 ? (<p className="text-muted-foreground text-sm">لم يُرفع أي ملف بعد.</p>) : (
             <div className="rounded-lg border overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-muted text-muted-foreground"><tr><th className="p-2 text-right">الملف</th><th className="p-2 text-right">المخزن</th><th className="p-2 text-right">عدد السجلات</th><th className="p-2 text-right">رفع بواسطة</th><th className="p-2 text-right">تاريخ الرفع</th></tr></thead>
-                <tbody>{uploads.map(u => (<tr key={u.id} className="border-t hover:bg-muted/30"><td className="p-2 font-medium truncate max-w-xs">{u.filename}</td><td className="p-2">{u.warehouse_hint || '—'}</td><td className="p-2 num">{formatNumber(u.rows_count)}</td><td className="p-2 text-xs">{u.uploaded_by_email || '—'}</td><td className="p-2 num">{formatDate(u.created_at)}</td></tr>))}</tbody>
+                <thead className="bg-muted text-muted-foreground"><tr><th className="p-2 text-right">الحالة</th><th className="p-2 text-right">الملف</th><th className="p-2 text-right">المخزن</th><th className="p-2 text-right">عدد السجلات</th><th className="p-2 text-right">رفع بواسطة</th><th className="p-2 text-right">تاريخ الرفع</th><th className="p-2"></th></tr></thead>
+                <tbody>{uploads.map(u => (
+                  <tr key={u.id} className={`border-t hover:bg-muted/30 ${u.id === currentUpload?.id ? 'bg-emerald-50' : ''}`}>
+                    <td className="p-2">{u.id === currentUpload?.id ? <Badge className="bg-emerald-600">ملف البحث الحالي</Badge> : <Badge variant="outline">قديم</Badge>}</td>
+                    <td className="p-2 font-medium truncate max-w-xs">{u.filename}</td>
+                    <td className="p-2">{u.warehouse_hint || '—'}</td>
+                    <td className="p-2 num">{formatNumber(u.rows_count)}</td>
+                    <td className="p-2 text-xs">{u.uploaded_by_email || '—'}</td>
+                    <td className="p-2 num">{formatDate(u.created_at)}</td>
+                    <td className="p-2 text-left">
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteUpload(u.id, u.filename)} disabled={deletingId === u.id}>
+                        {deletingId === u.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4 text-destructive" />}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}</tbody>
               </table>
             </div>
           )}
