@@ -42,6 +42,24 @@ async function handle(request, { params }) {
       return cors(NextResponse.json({ ok: true, service: 'pharmacy-search' }))
     }
 
+    // -------- SIGNUP (public) - new users start as 'pending' --------
+    if (route === '/signup' && method === 'POST') {
+      const body = await request.json()
+      const { email, password, full_name } = body || {}
+      if (!email || !password) return cors(NextResponse.json({ error: 'البريد وكلمة المرور مطلوبان' }, { status: 400 }))
+      if (String(password).length < 8) return cors(NextResponse.json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' }, { status: 400 }))
+      const admin = supabaseAdmin()
+      const { data: created, error: cErr } = await admin.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { full_name },
+      })
+      if (cErr) return cors(NextResponse.json({ error: cErr.message }, { status: 400 }))
+      const { error: pErr } = await admin.from('profiles').upsert({
+        id: created.user.id, email, full_name: full_name || null, role: 'pending',
+      })
+      if (pErr) return cors(NextResponse.json({ error: pErr.message }, { status: 400 }))
+      return cors(NextResponse.json({ ok: true, message: 'تم إرسال طلبك. سيتم تفعيل حسابك بعد موافقة الرئيس.' }))
+    }
+
     // -------- WHOAMI: return current profile --------
     if (route === '/me' && method === 'GET') {
       const profile = await getUserProfile(request)

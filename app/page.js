@@ -379,27 +379,74 @@ function UsersTab({ authedFetch, currentUser }) {
     } finally { setCreating(false) }
   }
 
-  async function remove(id) {
-    if (!confirm('حذف هذا المستخدم؟')) return
+  async function remove(id, isPending = false) {
+    if (!confirm(isPending ? 'رفض هذا الطلب وحذف المستخدم؟' : 'حذف هذا المستخدم؟')) return
     const r = await authedFetch(`/api/users/${id}`, { method: 'DELETE' }); const d = await r.json()
-    if (!r.ok) toast.error(d?.error); else { toast.success('تم الحذف'); refresh() }
+    if (!r.ok) toast.error(d?.error); else { toast.success(isPending ? 'تم رفض الطلب' : 'تم الحذف'); refresh() }
   }
   async function changeRole(id, role) {
     const r = await authedFetch(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify({ role }) })
     const d = await r.json(); if (!r.ok) toast.error(d?.error); else { toast.success('تم التحديث'); refresh() }
   }
+  async function approve(id, role = 'staff') {
+    const r = await authedFetch(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify({ role }) })
+    const d = await r.json(); if (!r.ok) toast.error(d?.error); else { toast.success(`تمت الموافقة كـ ${role === 'admin' ? 'رئيس' : 'موظف'}`); refresh() }
+  }
+
+  const pending = users.filter(u => u.role === 'pending')
+  const active = users.filter(u => u.role !== 'pending')
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div><h2 className="text-xl font-bold flex items-center gap-2"><UsersIcon className="size-5 text-primary" /> إدارة المستخدمين</h2><p className="text-sm text-muted-foreground">أضف موظفي الصيدلية الذين سيستخدمون النظام للبحث فقط.</p></div>
-        <Button onClick={() => setOpen(true)} className="gap-2"><UserPlus className="size-4" /> إضافة مستخدم</Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div><h2 className="text-xl font-bold flex items-center gap-2"><UsersIcon className="size-5 text-primary" /> إدارة المستخدمين</h2><p className="text-sm text-muted-foreground">يمكن للموظفين تسجيل أنفسهم — وأنت توافق أو ترفض من هنا.</p></div>
+        <Button onClick={() => setOpen(true)} className="gap-2" variant="outline"><UserPlus className="size-4" /> إضافة مستخدم مباشرة</Button>
       </div>
+
+      {/* Pending users section */}
+      {pending.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-900">
+              <ShieldCheck className="size-5" /> طلبات بانتظار الموافقة
+              <Badge className="bg-amber-500 hover:bg-amber-600 num">{pending.length}</Badge>
+            </CardTitle>
+            <CardDescription>هؤلاء سجلوا أنفسهم وينتظرون موافقتك للوصول إلى النظام.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead className="bg-amber-100/50 text-amber-900"><tr><th className="p-3 text-right">الاسم</th><th className="p-3 text-right">البريد</th><th className="p-3 text-right">تاريخ الطلب</th><th className="p-3 text-left">الإجراء</th></tr></thead>
+              <tbody>{pending.map(u => (
+                <tr key={u.id} className="border-t border-amber-200">
+                  <td className="p-3 font-medium">{u.full_name || '—'}</td>
+                  <td className="p-3">{u.email}</td>
+                  <td className="p-3 num text-muted-foreground">{formatDate(u.created_at)}</td>
+                  <td className="p-3 text-left">
+                    <div className="flex gap-2 justify-end flex-wrap">
+                      <Button size="sm" onClick={() => approve(u.id, 'staff')} className="bg-emerald-600 hover:bg-emerald-700 gap-1">
+                        <ShieldCheck className="size-4" /> موافقة (موظف)
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => approve(u.id, 'admin')} className="gap-1">
+                        <ShieldCheck className="size-4" /> موافقة (رئيس)
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(u.id, true)} className="text-destructive hover:text-destructive">
+                        <X className="size-4" /> رفض
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active users */}
       <Card><CardContent className="p-0 overflow-hidden">
         {loading ? <div className="p-6 text-center text-muted-foreground"><Loader2 className="size-5 animate-spin inline-block ml-2" /> جاري التحميل...</div> : (
           <table className="w-full text-sm">
             <thead className="bg-muted text-muted-foreground"><tr><th className="p-3 text-right">الاسم</th><th className="p-3 text-right">البريد</th><th className="p-3 text-right">الدور</th><th className="p-3 text-right">تاريخ الإنشاء</th><th className="p-3"></th></tr></thead>
-            <tbody>{users.map(u => (
+            <tbody>{active.map(u => (
               <tr key={u.id} className="border-t hover:bg-muted/30">
                 <td className="p-3 font-medium">{u.full_name || '—'} {u.id === currentUser?.id && <Badge variant="secondary" className="mr-2">أنت</Badge>}</td>
                 <td className="p-3">{u.email}</td>
@@ -412,14 +459,14 @@ function UsersTab({ authedFetch, currentUser }) {
                 <td className="p-3 num text-muted-foreground">{formatDate(u.created_at)}</td>
                 <td className="p-3 text-left">{u.id !== currentUser?.id && (<Button size="sm" variant="ghost" onClick={() => remove(u.id)}><Trash2 className="size-4 text-destructive" /></Button>)}</td>
               </tr>
-            ))}{users.length === 0 && (<tr><td colSpan="5" className="p-6 text-center text-muted-foreground">لا يوجد مستخدمون.</td></tr>)}</tbody>
+            ))}{active.length === 0 && (<tr><td colSpan="5" className="p-6 text-center text-muted-foreground">لا يوجد مستخدمون مفعّلون.</td></tr>)}</tbody>
           </table>
         )}
       </CardContent></Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /> إضافة مستخدم جديد</DialogTitle><DialogDescription>سيتم إنشاء الحساب فوراً بدون الحاجة لتأكيد البريد.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /> إضافة مستخدم مفعّل مباشرة</DialogTitle><DialogDescription>سيتم إنشاء الحساب وتفعيله فوراً (تجاوز خطوة الموافقة).</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="الاسم الكامل" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
             <Input placeholder="البريد الإلكتروني" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
@@ -437,19 +484,35 @@ function UsersTab({ authedFetch, currentUser }) {
 }
 
 function LoginScreen({ onLoggedIn }) {
+  const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
+
   async function submit(e) {
     e?.preventDefault()
     setLoading(true)
     try {
-      const sb = getBrowserSupabase()
-      const { data, error } = await sb.auth.signInWithPassword({ email, password })
-      if (error) toast.error(error.message || 'فشل تسجيل الدخول')
-      else onLoggedIn(data.session)
+      if (mode === 'login') {
+        const sb = getBrowserSupabase()
+        const { data, error } = await sb.auth.signInWithPassword({ email, password })
+        if (error) toast.error(error.message || 'فشل تسجيل الدخول')
+        else onLoggedIn(data.session)
+      } else {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, full_name: fullName }),
+        })
+        const data = await res.json()
+        if (!res.ok) { toast.error(data?.error || 'فشل إنشاء الحساب'); return }
+        toast.success('تم إرسال طلبك بنجاح! سجّل دخول بعد موافقة الرئيس.')
+        setMode('login'); setFullName(''); setPassword('')
+      }
     } finally { setLoading(false) }
   }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
@@ -458,12 +521,45 @@ function LoginScreen({ onLoggedIn }) {
           <div><CardTitle className="text-2xl">نظام بحث الأدوية</CardTitle><CardDescription>الصيدلية — نظام داخلي خاص</CardDescription></div>
         </CardHeader>
         <CardContent>
+          <div className="flex gap-2 mb-4 bg-muted p-1 rounded-lg">
+            <button type="button" onClick={() => setMode('login')} className={`flex-1 py-2 rounded-md text-sm font-medium transition ${mode === 'login' ? 'bg-white shadow text-foreground' : 'text-muted-foreground'}`}>تسجيل دخول</button>
+            <button type="button" onClick={() => setMode('signup')} className={`flex-1 py-2 rounded-md text-sm font-medium transition ${mode === 'signup' ? 'bg-white shadow text-foreground' : 'text-muted-foreground'}`}>إنشاء حساب</button>
+          </div>
           <form onSubmit={submit} className="space-y-3">
+            {mode === 'signup' && (
+              <div className="space-y-1"><label className="text-sm font-medium">الاسم الكامل</label><Input value={fullName} onChange={e => setFullName(e.target.value)} required className="h-11" placeholder="اسمك الكامل" /></div>
+            )}
             <div className="space-y-1"><label className="text-sm font-medium">البريد الإلكتروني</label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="h-11" placeholder="name@pharmacy.com" /></div>
-            <div className="space-y-1"><label className="text-sm font-medium">كلمة المرور</label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="h-11" placeholder="••••••••" /></div>
-            <Button type="submit" className="w-full h-11 mt-2" disabled={loading}>{loading ? <Loader2 className="size-4 animate-spin" /> : 'دخول'}</Button>
+            <div className="space-y-1"><label className="text-sm font-medium">كلمة المرور</label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} className="h-11" placeholder="••••••••" /></div>
+            <Button type="submit" className="w-full h-11 mt-2" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : (mode === 'login' ? 'دخول' : 'إنشاء حساب جديد')}
+            </Button>
           </form>
-          <p className="text-xs text-muted-foreground text-center mt-4">للموظفين حصراً — تواصل مع الرئيس للحصول على حساب</p>
+          {mode === 'signup' && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-3 text-center">
+              ⏳ سيتم تفعيل حسابك بعد موافقة الرئيس من داخل النظام.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function PendingScreen({ profile, onLogout }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-orange-50 p-4">
+      <Card className="w-full max-w-md shadow-xl border-0">
+        <CardHeader className="text-center space-y-3">
+          <div className="size-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg mx-auto"><ShieldCheck className="size-8" /></div>
+          <CardTitle className="text-2xl">حسابك بانتظار الموافقة</CardTitle>
+          <CardDescription>مرحباً <span className="font-semibold text-foreground">{profile?.full_name || profile?.email}</span> — تم استلام طلبك وسيتم تفعيل حسابك من قِبل الرئيس قريباً.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900 text-center">
+            بمجرد الموافقة، ستتمكن من تسجيل الدخول والبحث في الأدوية.
+          </div>
+          <Button variant="outline" className="w-full" onClick={onLogout}><LogOut className="size-4 ml-2" /> خروج</Button>
         </CardContent>
       </Card>
     </div>
@@ -475,6 +571,7 @@ function App() {
   const [profile, setProfile] = useState(null)
   const [bootLoading, setBootLoading] = useState(true)
   const [tab, setTab] = useState('search')
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
     const sb = getBrowserSupabase()
@@ -490,6 +587,17 @@ function App() {
     authedFetch('/api/me').then(r => r.json()).then(p => { if (p?.id) setProfile(p) }).catch(() => {})
   }, [session, authedFetch])
 
+  // Poll pending count for admins every 30s
+  useEffect(() => {
+    if (profile?.role !== 'admin') { setPendingCount(0); return }
+    const load = () => authedFetch('/api/users').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setPendingCount(d.filter(u => u.role === 'pending').length)
+    }).catch(() => {})
+    load()
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [profile, authedFetch, tab])
+
   async function logout() {
     await getBrowserSupabase().auth.signOut()
     setSession(null); setProfile(null); setTab('search')
@@ -498,6 +606,9 @@ function App() {
   if (bootLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>
   if (!session) return <LoginScreen onLoggedIn={setSession} />
   if (!profile) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>
+
+  // If user is pending approval, show waiting screen
+  if (profile.role === 'pending') return <PendingScreen profile={profile} onLogout={logout} />
 
   const isAdmin = profile?.role === 'admin'
 
@@ -524,7 +635,7 @@ function App() {
           <TabsList className={`grid ${isAdmin ? 'grid-cols-3 max-w-2xl' : 'grid-cols-1 max-w-xs'}`}>
             <TabsTrigger value="search" className="gap-2"><Search className="size-4" /> بحث</TabsTrigger>
             {isAdmin && <TabsTrigger value="admin" className="gap-2"><ShieldCheck className="size-4" /> رفع وإدارة</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="users" className="gap-2"><UsersIcon className="size-4" /> المستخدمون</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="users" className="gap-2"><UsersIcon className="size-4" /> المستخدمون {pendingCount > 0 && <Badge className="bg-amber-500 hover:bg-amber-600 num text-[10px] px-1.5">{pendingCount}</Badge>}</TabsTrigger>}
           </TabsList>
           <TabsContent value="search"><SearchTab authedFetch={authedFetch} /></TabsContent>
           {isAdmin && <TabsContent value="admin"><AdminTab authedFetch={authedFetch} /></TabsContent>}
