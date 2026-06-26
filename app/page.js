@@ -64,6 +64,7 @@ function MedicineDetailDialog({ record, open, onOpenChange, authedFetch }) {
 
   if (!record) return null
   const fields = [
+    { label: 'ID', value: record.source_id, icon: Hash },
     { label: 'الاسم العلمي', value: record.scientific_name, icon: Pill },
     { label: 'الشركة', value: record.company, icon: Building2 },
     { label: 'المخزن', value: record.warehouse, icon: Database },
@@ -110,8 +111,8 @@ function MedicineDetailDialog({ record, open, onOpenChange, authedFetch }) {
             ) : (
               <div className="rounded-lg border overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted text-muted-foreground"><tr><th className="p-2 text-right">التاريخ</th><th className="p-2 text-right">المخزن</th><th className="p-2 text-right">الفاتورة</th><th className="p-2 text-right">الكمية</th><th className="p-2 text-right">سعر الوحدة</th><th className="p-2 text-right">السعر الكلي</th><th className="p-2 text-right">الانتهاء</th></tr></thead>
-                  <tbody>{history.map((h) => (<tr key={h.id} className="border-t hover:bg-muted/30"><td className="p-2 num">{formatDate(h.invoice_date)}</td><td className="p-2">{h.warehouse || '—'}</td><td className="p-2 num">{h.invoice_number || '—'}</td><td className="p-2 num">{formatNumber(h.quantity)}</td><td className="p-2 num">{formatNumber(h.unit_price)}</td><td className="p-2 num">{formatNumber(h.total_price)}</td><td className="p-2 num">{h.expiry_raw || formatDate(h.expiry_date)}</td></tr>))}</tbody>
+                  <thead className="bg-muted text-muted-foreground"><tr><th className="p-2 text-right">ID</th><th className="p-2 text-right">التاريخ</th><th className="p-2 text-right">المخزن</th><th className="p-2 text-right">الفاتورة</th><th className="p-2 text-right">الكمية</th><th className="p-2 text-right">سعر الوحدة</th><th className="p-2 text-right">السعر الكلي</th><th className="p-2 text-right">الانتهاء</th></tr></thead>
+                  <tbody>{history.map((h) => (<tr key={h.id} className="border-t hover:bg-muted/30"><td className="p-2 num font-medium">{h.source_id || '—'}</td><td className="p-2 num">{formatDate(h.invoice_date)}</td><td className="p-2">{h.warehouse || '—'}</td><td className="p-2 num">{h.invoice_number || '—'}</td><td className="p-2 num">{formatNumber(h.quantity)}</td><td className="p-2 num">{formatNumber(h.unit_price)}</td><td className="p-2 num">{formatNumber(h.total_price)}</td><td className="p-2 num">{h.expiry_raw || formatDate(h.expiry_date)}</td></tr>))}</tbody>
                 </table>
               </div>
             )}
@@ -200,6 +201,7 @@ function SearchTab({ authedFetch }) {
             <Card key={g.name} className="hover:shadow-md hover:border-primary/40 transition cursor-pointer" onClick={() => { setSelected(r); setOpen(true) }}>
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2"><h3 className="font-bold text-base leading-tight line-clamp-2">{g.name}</h3><Badge className="shrink-0 num">{g.count}</Badge></div>
+                {r.source_id && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Hash className="size-3" /> ID: <span className="num font-medium text-foreground">{r.source_id}</span></p>}
                 <div className="text-xs text-muted-foreground space-y-1">{r.scientific_name && <p className="truncate">{r.scientific_name}</p>}{r.company && <p className="flex items-center gap-1"><Building2 className="size-3" /> {r.company}</p>}</div>
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t">
                   <div><p className="text-[10px] text-muted-foreground">السعر</p><p className="font-semibold text-sm num">{formatNumber(r.unit_price)}</p></div>
