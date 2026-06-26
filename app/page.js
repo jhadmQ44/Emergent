@@ -144,7 +144,7 @@ function SearchTab({ authedFetch }) {
       try {
         const [sRes, rRes] = await Promise.all([
           authedFetch(`/api/suggest?q=${encodeURIComponent(q)}`),
-          authedFetch(`/api/search?q=${encodeURIComponent(q)}&limit=200`),
+          authedFetch(`/api/search?q=${encodeURIComponent(q)}&limit=500`),
         ])
         const sData = await sRes.json()
         const rData = await rRes.json()
@@ -154,16 +154,20 @@ function SearchTab({ authedFetch }) {
     }, 180)
   }, [query, authedFetch])
 
-  const grouped = useMemo(() => {
-    const map = new Map()
-    for (const r of results) {
-      const k = (r.name || '').toLowerCase()
-      if (!map.has(k)) map.set(k, { name: r.name, latest: r, count: 0, items: [] })
-      const g = map.get(k)
-      g.count++; g.items.push(r)
-      if (new Date(r.created_at) > new Date(g.latest.created_at)) g.latest = r
-    }
-    return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, 60)
+  const sorted = useMemo(() => {
+    // Sort by source_id desc (as integer) so newest IDs (e.g., 152) appear first
+    const arr = [...results]
+    arr.sort((a, b) => {
+      const ai = parseInt(a.source_id)
+      const bi = parseInt(b.source_id)
+      const aValid = !isNaN(ai), bValid = !isNaN(bi)
+      if (aValid && bValid) return bi - ai
+      if (aValid) return -1
+      if (bValid) return 1
+      // fallback to created_at desc
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
+    return arr.slice(0, 200)
   }, [results])
 
   return (
@@ -192,26 +196,29 @@ function SearchTab({ authedFetch }) {
         )}
       </div>
       <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-        <span>{grouped.length > 0 ? <>عُثر على <span className="num font-bold text-foreground">{grouped.length}</span> دواء — <span className="num">{results.length}</span> سجل</> : 'لا توجد نتائج'}</span>
+        <span>{sorted.length > 0 ? <>عدد النتائج: <span className="num font-bold text-foreground">{sorted.length}</span> سجل (مرتبة من الأحدث)</> : 'لا توجد نتائج'}</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {grouped.map((g) => {
-          const r = g.latest
-          return (
-            <Card key={g.name} className="hover:shadow-md hover:border-primary/40 transition cursor-pointer" onClick={() => { setSelected(r); setOpen(true) }}>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2"><h3 className="font-bold text-base leading-tight line-clamp-2">{g.name}</h3><Badge className="shrink-0 num">{g.count}</Badge></div>
-                {r.source_id && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Hash className="size-3" /> ID: <span className="num font-medium text-foreground">{r.source_id}</span></p>}
-                <div className="text-xs text-muted-foreground space-y-1">{r.scientific_name && <p className="truncate">{r.scientific_name}</p>}{r.company && <p className="flex items-center gap-1"><Building2 className="size-3" /> {r.company}</p>}</div>
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t">
-                  <div><p className="text-[10px] text-muted-foreground">السعر</p><p className="font-semibold text-sm num">{formatNumber(r.unit_price)}</p></div>
-                  <div><p className="text-[10px] text-muted-foreground">آخر كمية</p><p className="font-semibold text-sm num">{formatNumber(r.quantity)}</p></div>
-                  <div><p className="text-[10px] text-muted-foreground">آخر فاتورة</p><p className="font-semibold text-xs num">{formatDate(r.invoice_date)}</p></div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {sorted.map((r) => (
+          <Card key={r.id} className="hover:shadow-md hover:border-primary/40 transition cursor-pointer" onClick={() => { setSelected(r); setOpen(true) }}>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-bold text-base leading-tight line-clamp-2">{r.name}</h3>
+                {r.source_id && <Badge className="shrink-0 num">ID: {r.source_id}</Badge>}
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                {r.scientific_name && <p className="truncate">{r.scientific_name}</p>}
+                {r.company && <p className="flex items-center gap-1"><Building2 className="size-3" /> {r.company}</p>}
+                {r.warehouse && <p className="flex items-center gap-1"><Database className="size-3" /> {r.warehouse}</p>}
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+                <div><p className="text-[10px] text-muted-foreground">السعر</p><p className="font-semibold text-sm num">{formatNumber(r.unit_price)}</p></div>
+                <div><p className="text-[10px] text-muted-foreground">الكمية</p><p className="font-semibold text-sm num">{formatNumber(r.quantity)}</p></div>
+                <div><p className="text-[10px] text-muted-foreground">تاريخ الفاتورة</p><p className="font-semibold text-xs num">{formatDate(r.invoice_date)}</p></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
       <MedicineDetailDialog record={selected} open={open} onOpenChange={setOpen} authedFetch={authedFetch} />
     </div>
