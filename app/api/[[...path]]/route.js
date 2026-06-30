@@ -3,6 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase'
 import { parseSheetBuffer } from '@/lib/parseSheet'
 
+// 🚀 هذه الأسطر الثلاثة هي الحل لمنع التخزين المؤقت وإجبار النظام على التحديث
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
@@ -10,6 +15,12 @@ function cors(res) {
   res.headers.set('Access-Control-Allow-Origin', process.env.CORS_ORIGINS || '*')
   res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  
+  // 🚀 إجبار المتصفح أيضاً على عدم تخزين النتيجة القديمة
+  res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.headers.set('Pragma', 'no-cache')
+  res.headers.set('Expires', '0')
+  
   return res
 }
 
