@@ -78,14 +78,33 @@ async function handle(request, { params }) {
       return cors(NextResponse.json(profile))
     }
 
-    // -------- STATS (auth required) --------
+    // -------- STATS (معدلة لتشمل إحصائيات حسب المخزن) --------
     if (route === '/stats' && method === 'GET') {
       const profile = await getUserProfile(request)
       if (!profile) return cors(NextResponse.json({ error: 'unauthenticated' }, { status: 401 }))
+      
       const sb = supabaseAdmin()
-      const { data, error } = await sb.from('stats_overview').select('*').maybeSingle()
-      if (error) throw error
-      return cors(NextResponse.json(data || {}))
+      const latestId = await getLatestUploadId(sb)
+      if (!latestId) return cors(NextResponse.json({ total_records: 0, by_warehouse: [] }))
+
+      // جلب الإحصائيات العامة + توزيع الأدوية حسب المخزن
+      const { data: general, error: gErr } = await sb.from('medicines')
+        .select('warehouse', { count: 'exact' })
+        .eq('upload_id', latestId)
+
+      if (gErr) throw gErr
+
+      // تجميع البيانات في JS (عدد الأدوية لكل مخزن)
+      const warehouseMap = {}
+      general.forEach(item => {
+        const wh = item.warehouse || 'غير محدد'
+        warehouseMap[wh] = (warehouseMap[wh] || 0) + 1
+      })
+
+      return cors(NextResponse.json({
+        total_records: general.length,
+        by_warehouse: Object.entries(warehouseMap).map(([name, count]) => ({ name, count }))
+      }))
     }
 
     // -------- UPLOADS LIST (auth required) --------
