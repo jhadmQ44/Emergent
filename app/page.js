@@ -517,8 +517,8 @@ function LoginScreen({ onLoggedIn }) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center space-y-3 pb-4">
-          <div className="size-16 rounded-2xl bg-gradient-to-br from-primary to-cyan-600 text-white flex items-center justify-center shadow-lg mx-auto"><Pill className="size-8" /></div>
-          <div><CardTitle className="text-2xl">نظام بحث الأدوية</CardTitle><CardDescription>الصيدلية — نظام داخلي خاص</CardDescription></div>
+          <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-24 w-auto object-contain mx-auto drop-shadow-sm" />
+          <div><CardTitle className="text-2xl text-primary font-bold">صيدلية الغسق</CardTitle><CardDescription>نظام بحث الأدوية الداخلي</CardDescription></div>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-4 bg-muted p-1 rounded-lg">
@@ -617,8 +617,8 @@ function App() {
       <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 text-white flex items-center justify-center shadow-md"><Pill className="size-5" /></div>
-            <div><h1 className="font-bold text-lg leading-tight">نظام بحث الأدوية</h1><p className="text-xs text-muted-foreground">الصيدلية — نظام داخلي</p></div>
+            <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-12 w-auto object-contain" />
+            <div><h1 className="font-bold text-xl leading-tight text-primary">صيدلية الغسق</h1><p className="text-xs text-muted-foreground">نظام إدارة الأدوية</p></div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded-full">
