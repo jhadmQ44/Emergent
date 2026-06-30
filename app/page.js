@@ -483,41 +483,13 @@ function UsersTab({ authedFetch, currentUser }) {
   )
 }
 
-function LoginScreen({ onLoggedIn }) {
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  async function submit(e) {
-    e?.preventDefault()
-    setLoading(true)
-    try {
-      if (mode === 'login') {
-        const sb = getBrowserSupabase()
-        const { data, error } = await sb.auth.signInWithPassword({ email, password })
-        if (error) toast.error(error.message || 'فشل تسجيل الدخول')
-        else onLoggedIn(data.session)
-      } else {
-        const res = await fetch('/api/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, full_name: fullName }),
-        })
-        const data = await res.json()
-        if (!res.ok) { toast.error(data?.error || 'فشل إنشاء الحساب'); return }
-        toast.success('تم إرسال طلبك بنجاح! سجّل دخول بعد موافقة الرئيس.')
-        setMode('login'); setFullName(''); setPassword('')
-      }
-    } finally { setLoading(false) }
-  }
-
-  return (
+return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
-      <CardHeader className="text-center pb-4">
+      <Card className="w-full max-w-md shadow-xl border-0">
+        <CardHeader className="text-center pb-4">
           <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-32 w-auto object-contain mx-auto drop-shadow-sm" />
         </CardHeader>
+        <CardContent>
           <div className="flex gap-2 mb-4 bg-muted p-1 rounded-lg">
             <button type="button" onClick={() => setMode('login')} className={`flex-1 py-2 rounded-md text-sm font-medium transition ${mode === 'login' ? 'bg-white shadow text-foreground' : 'text-muted-foreground'}`}>تسجيل دخول</button>
             <button type="button" onClick={() => setMode('signup')} className={`flex-1 py-2 rounded-md text-sm font-medium transition ${mode === 'signup' ? 'bg-white shadow text-foreground' : 'text-muted-foreground'}`}>إنشاء حساب</button>
@@ -536,15 +508,14 @@ function LoginScreen({ onLoggedIn }) {
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-3 text-center">
               ⏳ سيتم تفعيل حسابك بعد موافقة الرئيس من داخل النظام.
             </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    )
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 function PendingScreen({ profile, onLogout }) {
-// ... (بقية الكود)
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-orange-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
@@ -585,7 +556,6 @@ function App() {
     authedFetch('/api/me').then(r => r.json()).then(p => { if (p?.id) setProfile(p) }).catch(() => {})
   }, [session, authedFetch])
 
-  // Poll pending count for admins every 30s
   useEffect(() => {
     if (profile?.role !== 'admin') { setPendingCount(0); return }
     const load = () => authedFetch('/api/users').then(r => r.json()).then(d => {
@@ -605,7 +575,6 @@ function App() {
   if (!session) return <LoginScreen onLoggedIn={setSession} />
   if (!profile) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>
 
-  // If user is pending approval, show waiting screen
   if (profile.role === 'pending') return <PendingScreen profile={profile} onLogout={logout} />
 
   const isAdmin = profile?.role === 'admin'
@@ -614,13 +583,9 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          
-          {/* هذا الجزء الخاص بالشعار والاسم */}
           <div className="flex items-center">
             <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-16 w-auto object-contain" />
           </div>
-
-          {/* هذا الجزء الخاص بالمستخدم وزر الخروج */}
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded-full">
               <User className="size-4 text-primary" />
@@ -629,7 +594,6 @@ function App() {
             </div>
             <Button variant="outline" size="sm" onClick={logout} className="gap-2"><LogOut className="size-4" /> خروج</Button>
           </div>
-          
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
@@ -648,5 +612,3 @@ function App() {
     </div>
   )
 }
-
-export default App
