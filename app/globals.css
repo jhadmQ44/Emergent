@@ -9,19 +9,29 @@
   --card-foreground: 222.2 47.4% 11.2%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 47.4% 11.2%;
-  --primary: 173 80% 36%;
+  
+  /* اللون البنفسجي الغامق (الرئيسي للهوية - الثقة والأمان) */
+  --primary: 250 36% 34%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
+  
+  /* اللون الأخضر (الثانوي - الصحة والنمو) */
+  --secondary: 89 46% 48%;
+  --secondary-foreground: 0 0% 100%;
+  
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 173 70% 95%;
-  --accent-foreground: 173 80% 20%;
+  
+  /* اللون البرتقالي (التمييز والأزرار الملفتة - الأمل والشفاء) */
+  --accent: 30 89% 55%;
+  --accent-foreground: 0 0% 100%;
+  
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 173 80% 36%;
+  
+  /* توحيد الإطار مع اللون الرئيسي */
+  --ring: 250 36% 34%;
   --radius: 0.6rem;
 }
 
@@ -32,25 +42,32 @@
   --card-foreground: 210 40% 98%;
   --popover: 222.2 47.4% 8%;
   --popover-foreground: 210 40% 98%;
-  --primary: 173 80% 45%;
+  
+  /* ألوان الهوية معدلة لتناسب الوضع الليلي براحة للعين */
+  --primary: 250 40% 60%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
+  
+  --secondary: 89 40% 45%;
+  --secondary-foreground: 0 0% 100%;
+  
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
+  
+  --accent: 30 89% 50%;
+  --accent-foreground: 0 0% 100%;
+  
   --destructive: 0 62.8% 50%;
   --destructive-foreground: 0 0% 98%;
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --ring: 173 80% 45%;
+  --ring: 250 40% 60%;
 }
 
 * { border-color: hsl(var(--border)); }
 body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
 
-.font-cairo { font-family: 'Cairo', 'Inter', system-ui, sans-serif; }
+/* قمت بتغيير اسم الكلاس ليطابق خط الهوية (Thmanyah) */
+.font-thmanyah { font-family: 'Thmanyah', 'Cairo', system-ui, sans-serif; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
