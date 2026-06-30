@@ -516,9 +516,8 @@ function LoginScreen({ onLoggedIn }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
-        <CardHeader className="text-center space-y-3 pb-4">
-          <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-24 w-auto object-contain mx-auto drop-shadow-sm" />
-          <div><CardTitle className="text-2xl text-primary font-bold">صيدلية الغسق</CardTitle><CardDescription>نظام بحث الأدوية الداخلي</CardDescription></div>
+        <CardHeader className="text-center pb-4">
+          <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-32 w-auto object-contain mx-auto drop-shadow-sm" />
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-4 bg-muted p-1 rounded-lg">
@@ -616,9 +615,8 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-12 w-auto object-contain" />
-            <div><h1 className="font-bold text-xl leading-tight text-primary">صيدلية الغسق</h1><p className="text-xs text-muted-foreground">نظام إدارة الأدوية</p></div>
+          <div className="flex items-center">
+            <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-16 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded-full">
