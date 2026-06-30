@@ -615,12 +615,17 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          
+          {/* هذا الجزء الخاص بالشعار والاسم */}
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-12 w-auto object-contain" />
-            <div><h1 className="font-bold text-xl leading-tight text-primary">صيدلية الغسق</h1><p className="text-xs text-muted-foreground">نظام إدارة الأدوية</p></div>
-          <div className="flex items-center">
-            <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-16 w-auto object-contain" />
+            <div>
+              <h1 className="font-bold text-xl leading-tight text-primary">صيدلية الغسق</h1>
+              <p className="text-xs text-muted-foreground">نظام إدارة الأدوية</p>
+            </div>
           </div>
+
+          {/* هذا الجزء الخاص بالمستخدم وزر الخروج */}
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-sm bg-muted px-3 py-1.5 rounded-full">
               <User className="size-4 text-primary" />
@@ -629,6 +634,7 @@ function App() {
             </div>
             <Button variant="outline" size="sm" onClick={logout} className="gap-2"><LogOut className="size-4" /> خروج</Button>
           </div>
+          
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
