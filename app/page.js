@@ -483,6 +483,7 @@ function UsersTab({ authedFetch, currentUser }) {
   )
 }
 
+function LoginScreen({ onLoggedIn }) {
 return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
