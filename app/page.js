@@ -539,7 +539,7 @@ function LoginScreen({ onLoggedIn }) {
           )}
         </CardContent>
       </Card>
-    </div> // <--- هذا الـ div كان مفقوداً في نسختك!
+    </div>
   )
 }
 
