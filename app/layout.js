@@ -2,8 +2,8 @@ import './globals.css'
 import { Providers } from './providers'
 
 export const metadata = {
-  title: 'نظام بحث الأدوية | الصيدلية',
-  description: 'نظام بحث وإدارة الأدوية للصيدلية',
+  title: 'صيدلية الغسق | النظام الداخلي',
+  description: 'نظام بحث وإدارة الأدوية الخاص بصيدلية الغسق',
 }
 
 export default function RootLayout({ children }) {
