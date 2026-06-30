@@ -516,9 +516,6 @@ function LoginScreen({ onLoggedIn }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
-        <CardHeader className="text-center space-y-3 pb-4">
-          <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-24 w-auto object-contain mx-auto drop-shadow-sm" />
-          <div><CardTitle className="text-2xl text-primary font-bold">صيدلية الغسق</CardTitle><CardDescription>نظام بحث الأدوية الداخلي</CardDescription></div>
         <CardHeader className="text-center pb-4">
           <img src="/logo.png" alt="شعار صيدلية الغسق" className="h-32 w-auto object-contain mx-auto drop-shadow-sm" />
         </CardHeader>
