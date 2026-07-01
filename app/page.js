@@ -1,5 +1,4 @@
 'use client'
-export const dynamic = 'force-dynamic';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -484,7 +483,13 @@ function UsersTab({ authedFetch, currentUser }) {
 }
 
 function LoginScreen({ onLoggedIn }) {
-return (
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center pb-4">
@@ -515,7 +520,6 @@ return (
     </div>
   )
 }
-
 function PendingScreen({ profile, onLogout }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-orange-50 p-4">
