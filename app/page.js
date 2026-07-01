@@ -95,7 +95,7 @@ function MedicineDetailDialog({ record, open, onOpenChange, authedFetch }) {
         <ScrollArea className="flex-1 pr-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
             {fields.map((f, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border">
+              <div key={f.label} className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border">
                 <f.icon className="size-4 text-primary mt-1 flex-shrink-0" />
                 <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">{f.label}</p><p className="font-medium truncate">{f.value || '—'}</p></div>
               </div>
@@ -165,8 +165,8 @@ function SearchTab({ authedFetch }) {
     // Sort by source_id desc (as integer) so newest IDs (e.g., 152) appear first
     const arr = [...results]
     arr.sort((a, b) => {
-      const ai = parseInt(a.source_id)
-      const bi = parseInt(b.source_id)
+      const ai = parseInt(a.source_id, 10)
+      const bi = parseInt(b.source_id, 10)
       const aValid = !isNaN(ai), bValid = !isNaN(bi)
       if (aValid && bValid) return bi - ai
       if (aValid) return -1
@@ -202,7 +202,7 @@ function SearchTab({ authedFetch }) {
         {showSuggest && suggestions.length > 0 && (
           <div className="absolute z-30 mt-2 w-full rounded-lg border bg-popover shadow-lg overflow-hidden">
             {suggestions.map((s, i) => (
-              <button key={i} onMouseDown={(e) => { e.preventDefault(); setQuery(s.name); setShowSuggest(false) }}
+              <button key={s.name} onMouseDown={(e) => { e.preventDefault(); setQuery(s.name); setShowSuggest(false) }}
                 className="w-full text-right px-4 py-3 hover:bg-accent border-b last:border-b-0 flex items-center justify-between gap-3">
                 <div className="min-w-0"><p className="font-medium truncate">{s.name}</p><p className="text-xs text-muted-foreground truncate">{s.company || s.scientific_name || '—'}</p></div>
                 <Badge variant="outline" className="num">{s.hits} سجل</Badge>
@@ -272,7 +272,7 @@ function AdminTab({ authedFetch }) {
       else { toast.success(`تم استيراد ${data.rows_inserted} سجل بنجاح — الملف الجديد أصبح هو ملف البحث الحالي`); setLastResult(data); setFile(null); refresh() }
     } catch (e) { toast.error(e?.message || 'فشل الاتصال') } finally { setUploading(false) }
   }
-
+return () => clearTimeout(debounceRef.current);
   async function handleDeleteUpload(id, filename) {
     if (!confirm(`حذف الملف "${filename}" وكل سجلاته نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) return
     setDeletingId(id)
@@ -488,7 +488,48 @@ function LoginScreen({ onLoggedIn }) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+const submit = async (e) => {
+  e.preventDefault();
 
+  setLoading(true);
+
+  try {
+    const sb = getBrowserSupabase();
+
+    if (mode === "login") {
+      const { error } = await sb.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("تم تسجيل الدخول");
+    } else {
+      const { error } = await sb.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("تم إنشاء الحساب");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-cyan-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
@@ -617,3 +658,4 @@ function App() {
     </div>
   )
 }
+export default App
