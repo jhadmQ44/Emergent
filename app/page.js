@@ -272,7 +272,6 @@ function AdminTab({ authedFetch }) {
       else { toast.success(`تم استيراد ${data.rows_inserted} سجل بنجاح — الملف الجديد أصبح هو ملف البحث الحالي`); setLastResult(data); setFile(null); refresh() }
     } catch (e) { toast.error(e?.message || 'فشل الاتصال') } finally { setUploading(false) }
   }
-return () => clearTimeout(debounceRef.current);
   async function handleDeleteUpload(id, filename) {
     if (!confirm(`حذف الملف "${filename}" وكل سجلاته نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) return
     setDeletingId(id)
